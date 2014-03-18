@@ -26,8 +26,6 @@ var access_token = '2394810498-UEUWHrb1PgldqQ2Ju7kDrtjd5hz0nPvUGlE5SRd';        
 var access_token_secret = 'GrPBQqM9lhcXuvvvV7Y4cQYpukzpftTDXxO0qMoEbHcTr';   // <---- Fill me in
 
 // Twitter symbols array.
-var watchSymbols = ['DL_ON', '$msft', '$intc', '$hpq', '$goog', '$nok', '$nvda', '$bac', '$orcl', '$csco', '$aapl', '$ntap', '$emc', '$t', '$ibm', '$vz', '$xom', '$cvx', '$ge', '$ko', '$jnj'];
-
 var watchSymbols = ['DL_LIGHTS_ON', 'DL_LIGHTS_OFF', 'DL_OPEN_DOOR', 'DL_CLOSE_DOOR'];
 
 //This structure will keep the total number of tweets received and a map of all the symbols and how many tweets received of that symbol
@@ -78,6 +76,66 @@ sockets.sockets.on('connection', function(socket) {
     socket.emit('data', watchList);
 });
 
+//*************************create the HTTP POST Method for mike's DL control service
+
+/*mikes stuff
+
+
+http://prodmos.foundry.att.com/dlife/dl/svcs/devices/doghousesyst/dogh_light_on
+
+http://prodmos.foundry.att.com/dlife/dl/svcs/devices/doghousesyst/dogh_light_off
+
+*/
+
+function CallDLService(command) {
+	console.log("here i am");
+					var options = 
+					{
+						hostname: 'prodmos.foundry.att.com', //'www.google.com', //, //,
+						port: 80,
+						//path: '/dlife/dl/svcs/devices/doghousesyst/dogh_light_on',
+						path: '/dlife/dl/svcs/devices/doghousesyst/' + command,
+						method: 'GET'
+					};
+    				var response_hold = '';
+    				var json_objects = '';
+    				var req2 = http.request(options, function(res2)
+    				{
+        				console.log('STATUS: ' + res2.statusCode);
+        				console.log('HEADERS: ' + JSON.stringify(res2.headers));
+        				res2.setEncoding('utf8');
+        				res2.on('data', function (chunk) 
+        				{
+            				response_hold = response_hold + chunk;
+            				console.log('BODY: ' + chunk);
+        				});
+        				res2.on('end', function ()
+        				{
+            				response_hold = JSON.parse(response_hold);
+            				//var json_obj = jquery().parseJSON(response_hold);
+            				//testing calling out JSON items by name
+            				for(var item in response_hold)
+            				{
+                				console.log(item + ": " + response_hold[item]);
+            				};
+            				//res1.writeHead(200, {'Content-Type': 'text/html'});
+            				//res1.write(response_hold);
+            				//res1.end('function 2 - callback complete \n');
+        				});
+    				});
+    				req2.on('error', function(e) 
+    				{
+        				console.log('problem with request: ' + e.message);
+    				});
+    				//write data to request body
+    				req2.write('data\n');
+    				req2.write('data\n');
+    				req2.end();
+}
+
+//*****************************END DL GET method
+
+
 // Instantiate the twitter connection
 var t = new twitter({
     consumer_key: api_key,
@@ -115,9 +173,55 @@ t.stream('statuses/filter', { track: watchSymbols }, function(stream) {
 			{
 				case 'DL_LIGHTS_ON':
 					console.log('DL_LIGHT_ON just spotted...call mike!');
+					
+		/*			
+					var options = 
+					{
+						hostname: 'prodmos.foundry.att.com', //'www.google.com', //, //,
+						port: 80,
+						path: '/dlife/dl/svcs/devices/doghousesyst/dogh_light_on',
+						method: 'GET'
+					};
+    				var response_hold = '';
+    				var json_objects = '';
+    				var req2 = http.request(options, function(res2)
+    				{
+        				console.log('STATUS: ' + res2.statusCode);
+        				console.log('HEADERS: ' + JSON.stringify(res2.headers));
+        				res2.setEncoding('utf8');
+        				res2.on('data', function (chunk) 
+        				{
+            				response_hold = response_hold + chunk;
+            				console.log('BODY: ' + chunk);
+        				});
+        				res2.on('end', function ()
+        				{
+            				response_hold = JSON.parse(response_hold);
+            				//var json_obj = jquery().parseJSON(response_hold);
+            				//testing calling out JSON items by name
+            				for(var item in response_hold)
+            				{
+                				console.log(item + ": " + response_hold[item]);
+            				};
+            				//res1.writeHead(200, {'Content-Type': 'text/html'});
+            				//res1.write(response_hold);
+            				//res1.end('function 2 - callback complete \n');
+        				});
+    				});
+    				req2.on('error', function(e) 
+    				{
+        				console.log('problem with request: ' + e.message);
+    				});
+    				//write data to request body
+    				req2.write('data\n');
+    				req2.write('data\n');
+    				req2.end();
+    		*/
+					CallDLService('dogh_light_on');
 					break;
 				case 'DL_LIGHTS_OFF':
 					console.log('DL_LIGHT_OFF just spotted...call mike!');
+					CallDLService('dogh_light_off');
 					break;
 				case 'DL_OPEN_DOOR':
 					console.log('DL_DOOR_OPEN just spotted...call mike!');
@@ -158,37 +262,6 @@ new cronJob('0 0 0 * * *', function(){
     sockets.sockets.emit('data', watchList);
 }, null, true);
 
-//*************************create the HTTP POST Method for mike's DL control service
-
-function CallDLService(command) {
-	var mike_options = 
-	{
-		hostname: 'prodmos.foundry.att.com', //'www.google.com',
-		port: 80,
-		path: '/dlife/dl/svcs/devices/doghousesyst/get_devicesall/' + command,
-		method: 'GET'
-	};
- 	var response_hold = '';
-	var command_request = http.request(mike_options, function(res) 
-	{
-		console.log('STATUS: ' + res.statusCode);
-		console.log('HEADERS: ' + JSON.stringify(res.headers));
-		res.setEncoding('utf8');
-		res.on('data', function (chunk) 
-		{
-			response_hold = response_hold + chunk;
-			console.log('BODY: ' + chunk);
-		});
-		res.on('end', function ()
-		{
-			response_hold = JSON.parse(response_hold);
-			console.log('total_chunks: ' + response_hold);
-			//res1.writeHead(200, {'Content-Type': 'text/plain'});
-		});
-	});
-}
-
-//*****************************END DL POST method
 
 //Create the server
 server.listen(app.get('port'), function(){
