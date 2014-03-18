@@ -158,6 +158,38 @@ new cronJob('0 0 0 * * *', function(){
     sockets.sockets.emit('data', watchList);
 }, null, true);
 
+//*************************create the HTTP POST Method for mike's DL control service
+
+function CallDLService(command) {
+	var mike_options = 
+	{
+		hostname: 'prodmos.foundry.att.com', //'www.google.com',
+		port: 80,
+		path: '/dlife/dl/svcs/devices/doghousesyst/get_devicesall/' + command,
+		method: 'GET'
+	};
+ 	var response_hold = '';
+	var command_request = http.request(mike_options, function(res) 
+	{
+		console.log('STATUS: ' + res.statusCode);
+		console.log('HEADERS: ' + JSON.stringify(res.headers));
+		res.setEncoding('utf8');
+		res.on('data', function (chunk) 
+		{
+			response_hold = response_hold + chunk;
+			console.log('BODY: ' + chunk);
+		});
+		res.on('end', function ()
+		{
+			response_hold = JSON.parse(response_hold);
+			console.log('total_chunks: ' + response_hold);
+			//res1.writeHead(200, {'Content-Type': 'text/plain'});
+		});
+	});
+}
+
+//*****************************END DL POST method
+
 //Create the server
 server.listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
