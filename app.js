@@ -26,7 +26,7 @@ var access_token = '2394810498-UEUWHrb1PgldqQ2Ju7kDrtjd5hz0nPvUGlE5SRd';        
 var access_token_secret = 'GrPBQqM9lhcXuvvvV7Y4cQYpukzpftTDXxO0qMoEbHcTr';   // <---- Fill me in
 
 // Twitter symbols array.
-var watchSymbols = ['DL_LIGHTS_ON', 'DL_LIGHTS_OFF', 'DL_OPEN_DOOR', 'DL_CLOSE_DOOR'];
+var watchSymbols = ['lights on', 'light on', 'lights off', 'light off', 'door lock', 'lock door', 'door unlock', 'unlock door', 'DL_LIGHTS_ON', 'DL_LIGHTS_OFF', 'DL_OPEN_DOOR', 'DL_CLOSE_DOOR'];
 
 //This structure will keep the total number of tweets received and a map of all the symbols and how many tweets received of that symbol
 var watchList = {
@@ -114,10 +114,13 @@ function CallDLService(command) {
             				response_hold = JSON.parse(response_hold);
             				//var json_obj = jquery().parseJSON(response_hold);
             				//testing calling out JSON items by name
+            				/*
             				for(var item in response_hold)
             				{
                 				console.log(item + ": " + response_hold[item]);
             				};
+            				*/
+            				console.log('call completed');
             				//res1.writeHead(200, {'Content-Type': 'text/html'});
             				//res1.write(response_hold);
             				//res1.end('function 2 - callback complete \n');
@@ -161,73 +164,39 @@ t.stream('statuses/filter', { track: watchSymbols }, function(stream) {
 
       //We're gunna do some indexOf comparisons and we want it to be case agnostic.
       var text = tweet.text.toLowerCase();
-
+      //console.log('here is the tweet found: ' + tweet.text.toLowerCase());
       //Go through every symbol and see if it was mentioned. If so, increment its counter and
       //set the 'claimed' variable to true to indicate something was mentioned so we can increment
       //the 'total' counter!
+//lets make sure it is a tweet directed @troymeuninck
+if (text.indexOf('@troymeuninck') !== -1){
       _.each(watchSymbols, function(v) {
           if (text.indexOf(v.toLowerCase()) !== -1) {
 			console.log('WE FOUND ONE');
 			console.log(v);
-			switch(v)
+			switch(v.toLowerCase())
 			{
-				case 'DL_LIGHTS_ON':
+				case 'lights on':
+				case 'light on':
+				case 'dl_light_on':
 					console.log('DL_LIGHT_ON just spotted...call mike!');
-					
-		/*			
-					var options = 
-					{
-						hostname: 'prodmos.foundry.att.com', //'www.google.com', //, //,
-						port: 80,
-						path: '/dlife/dl/svcs/devices/doghousesyst/dogh_light_on',
-						method: 'GET'
-					};
-    				var response_hold = '';
-    				var json_objects = '';
-    				var req2 = http.request(options, function(res2)
-    				{
-        				console.log('STATUS: ' + res2.statusCode);
-        				console.log('HEADERS: ' + JSON.stringify(res2.headers));
-        				res2.setEncoding('utf8');
-        				res2.on('data', function (chunk) 
-        				{
-            				response_hold = response_hold + chunk;
-            				console.log('BODY: ' + chunk);
-        				});
-        				res2.on('end', function ()
-        				{
-            				response_hold = JSON.parse(response_hold);
-            				//var json_obj = jquery().parseJSON(response_hold);
-            				//testing calling out JSON items by name
-            				for(var item in response_hold)
-            				{
-                				console.log(item + ": " + response_hold[item]);
-            				};
-            				//res1.writeHead(200, {'Content-Type': 'text/html'});
-            				//res1.write(response_hold);
-            				//res1.end('function 2 - callback complete \n');
-        				});
-    				});
-    				req2.on('error', function(e) 
-    				{
-        				console.log('problem with request: ' + e.message);
-    				});
-    				//write data to request body
-    				req2.write('data\n');
-    				req2.write('data\n');
-    				req2.end();
-    		*/
 					CallDLService('dogh_light_on');
 					break;
-				case 'DL_LIGHTS_OFF':
+				case 'lights off':
+				case 'light off':
+				case 'dl_lights_off':
 					console.log('DL_LIGHT_OFF just spotted...call mike!');
 					CallDLService('dogh_light_off');
 					break;
-				case 'DL_OPEN_DOOR':
-					console.log('DL_DOOR_OPEN just spotted...call mike!');
+				case 'unlock door':
+				case 'door unlock':
+					console.log('unlock door just spotted...call mike!');
+					CallDLService('dogh_door_unlock');
 					break;
-				case 'DL_CLOSE_DOOR':
-					console.log('DL_DOOR_CLOSE just spotted...call mike!');
+				case 'lock door':
+				case 'door lock':
+					console.log('lock door just spotted...call mike!');
+					CallDLService('dogh_door_lock');
 					break;
 				default:
 					console.log ('we spotted something we should not have');
@@ -236,7 +205,7 @@ t.stream('statuses/filter', { track: watchSymbols }, function(stream) {
               claimed = true;
           }
       });
-
+}
       //If something was mentioned, increment the total counter and send the update to all the clients
       if (claimed) {
           //Increment total
